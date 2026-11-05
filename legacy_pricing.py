@@ -64,9 +64,7 @@ def coupon_multiplier(c, t, u):
 
 
 def service_fee(total):
-    """Service fee by price band; no fee on a zero total."""
-    if total <= 0:
-        return 0.0
+    """Service fee by price band."""
     if total < 20:
         return 1.0
     if total < 100:
@@ -85,7 +83,5 @@ def calc(t, q, u, d, c=None, w=False):
     total = total * coupon_multiplier(c, t, u)
     if w:
         total = total + 2.0
-    if total < 0:
-        total = 0.0
     fee = service_fee(total)
     return round(total + fee, 2)
