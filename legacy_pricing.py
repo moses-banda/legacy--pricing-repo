@@ -5,68 +5,91 @@ Your job: refactor it without changing behavior, and measure the result with rad
 """
 
 
-def calc(t, q, u, d, c=None, w=False):
-    # t = event type, q = quantity, u = user dict, d = day of week (0=Mon..6=Sun),
-    # c = coupon code, w = waitlist
-    p = 0
-    if t == "concert":
-        if d == 5 or d == 6:
-            p = 25.0
-        else:
-            p = 20.0
-    elif t == "lecture":
-        p = 5.0
-    elif t == "sports":
-        if d == 5 or d == 6:
-            p = 15.0
-        else:
-            p = 12.0
-    elif t == "workshop":
-        p = 30.0
-    else:
+# (weekday price, weekend price) per event type
+PRICES = {
+    "concert": (20.0, 25.0),
+    "lecture": (5.0, 5.0),
+    "sports": (12.0, 15.0),
+    "workshop": (30.0, 30.0),
+}
+
+
+def base_price(t, d):
+    """Per-ticket price for an event type on a given day (0=Mon..6=Sun)."""
+    if t not in PRICES:
         raise ValueError("bad type")
+    weekday, weekend = PRICES[t]
+    return weekend if d == 5 or d == 6 else weekday
+
+
+def validate_quantity(q):
     if q <= 0:
         raise ValueError("bad qty")
     if q > 10:
         raise ValueError("too many")
-    total = p * q
-    if u is not None:
-        if u.get("role") == "student":
-            if u.get("verified"):
-                total = total * 0.8
-            else:
-                total = total * 0.9
-        elif u.get("role") == "staff":
-            total = total * 0.85
-        elif u.get("role") == "alumni":
-            if u.get("years", 0) >= 10:
-                total = total * 0.85
-            else:
-                total = total * 0.95
-    if q >= 5:
-        if t != "workshop":
-            total = total - 5.0
-    if c is not None:
-        if c == "WELCOME10":
-            if u is not None and u.get("first_purchase"):
-                total = total * 0.9
-        elif c == "HALFOFF":
-            if t == "lecture":
-                total = total * 0.5
-        elif c == "FREEDRINK":
-            pass
-        else:
-            raise ValueError("bad coupon")
+
+
+def role_multiplier(u):
+    """Price multiplier for the user's role (1.0 = no discount)."""
+    if u is None:
+        return 1.0
+    role = u.get("role")
+    if role == "student":
+        return 0.8 if u.get("verified") else 0.9
+    if role == "staff":
+        return 0.85
+    if role == "alumni":
+        return 0.85 if u.get("years", 0) >= 10 else 0.95
+    return 1.0
+
+
+def bulk_discount(t, q):
+    """Flat amount off for orders of 5+ tickets (workshops excluded)."""
+    if q >= 5 and t != "workshop":
+        return 5.0
+    return 0.0
+
+
+def coupon_multiplier(c, t, u):
+    """Price multiplier for a coupon code; raises ValueError for unknown codes."""
+    if c is None:
+        return 1.0
+    if c == "WELCOME10":
+        return 0.9 if u is not None and u.get("first_purchase") else 1.0
+    if c == "HALFOFF":
+        return 0.5 if t == "lecture" else 1.0
+    if c == "FREEDRINK":
+        return 1.0
+    raise ValueError("bad coupon")
+
+
+def service_fee(total):
+    """Service fee by price band."""
+    if total < 20:
+        return 1.0
+    if total < 100:
+        return 2.5
+    return 5.0
+
+
+WAITLIST_SURCHARGE = 2.0
+
+
+def calc(t, q, u, d, c=None, w=False):
+    """Final ticket price for an order.
+
+    t = event type, q = quantity, u = user dict or None, d = day of week
+    (0=Mon..6=Sun), c = coupon code, w = waitlist.
+
+    Order matters: role discount, then bulk discount, then coupon, then
+    waitlist surcharge, then service fee (tiered on the discounted total).
+    """
+    unit_price = base_price(t, d)
+    validate_quantity(q)
+    total = unit_price * q
+    total = total * role_multiplier(u)
+    total = total - bulk_discount(t, q)
+    total = total * coupon_multiplier(c, t, u)
     if w:
-        total = total + 2.0
-    if total < 0:
-        total = 0.0
-    fee = 0.0
-    if total > 0:
-        if total < 20:
-            fee = 1.0
-        elif total < 100:
-            fee = 2.5
-        else:
-            fee = 5.0
-    return round(total + fee, 2)
+        total = total + WAITLIST_SURCHARGE
+    return round(total + service_fee(total), 2)
