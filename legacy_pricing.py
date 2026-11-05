@@ -72,16 +72,24 @@ def service_fee(total):
     return 5.0
 
 
+WAITLIST_SURCHARGE = 2.0
+
+
 def calc(t, q, u, d, c=None, w=False):
-    # t = event type, q = quantity, u = user dict, d = day of week (0=Mon..6=Sun),
-    # c = coupon code, w = waitlist
-    p = base_price(t, d)
+    """Final ticket price for an order.
+
+    t = event type, q = quantity, u = user dict or None, d = day of week
+    (0=Mon..6=Sun), c = coupon code, w = waitlist.
+
+    Order matters: role discount, then bulk discount, then coupon, then
+    waitlist surcharge, then service fee (tiered on the discounted total).
+    """
+    unit_price = base_price(t, d)
     validate_quantity(q)
-    total = p * q
+    total = unit_price * q
     total = total * role_multiplier(u)
     total = total - bulk_discount(t, q)
     total = total * coupon_multiplier(c, t, u)
     if w:
-        total = total + 2.0
-    fee = service_fee(total)
-    return round(total + fee, 2)
+        total = total + WAITLIST_SURCHARGE
+    return round(total + service_fee(total), 2)
