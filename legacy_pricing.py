@@ -5,21 +5,21 @@ Your job: refactor it without changing behavior, and measure the result with rad
 """
 
 
+# (weekday price, weekend price) per event type
+PRICES = {
+    "concert": (20.0, 25.0),
+    "lecture": (5.0, 5.0),
+    "sports": (12.0, 15.0),
+    "workshop": (30.0, 30.0),
+}
+
+
 def base_price(t, d):
     """Per-ticket price for an event type on a given day (0=Mon..6=Sun)."""
-    if t == "concert":
-        if d == 5 or d == 6:
-            return 25.0
-        return 20.0
-    elif t == "lecture":
-        return 5.0
-    elif t == "sports":
-        if d == 5 or d == 6:
-            return 15.0
-        return 12.0
-    elif t == "workshop":
-        return 30.0
-    raise ValueError("bad type")
+    if t not in PRICES:
+        raise ValueError("bad type")
+    weekday, weekend = PRICES[t]
+    return weekend if d == 5 or d == 6 else weekday
 
 
 def calc(t, q, u, d, c=None, w=False):
