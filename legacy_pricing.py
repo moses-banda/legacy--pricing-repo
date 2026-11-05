@@ -63,6 +63,17 @@ def coupon_multiplier(c, t, u):
     raise ValueError("bad coupon")
 
 
+def service_fee(total):
+    """Service fee by price band; no fee on a zero total."""
+    if total <= 0:
+        return 0.0
+    if total < 20:
+        return 1.0
+    if total < 100:
+        return 2.5
+    return 5.0
+
+
 def calc(t, q, u, d, c=None, w=False):
     # t = event type, q = quantity, u = user dict, d = day of week (0=Mon..6=Sun),
     # c = coupon code, w = waitlist
@@ -76,12 +87,5 @@ def calc(t, q, u, d, c=None, w=False):
         total = total + 2.0
     if total < 0:
         total = 0.0
-    fee = 0.0
-    if total > 0:
-        if total < 20:
-            fee = 1.0
-        elif total < 100:
-            fee = 2.5
-        else:
-            fee = 5.0
+    fee = service_fee(total)
     return round(total + fee, 2)
