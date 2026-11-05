@@ -1,5 +1,7 @@
 # REFACTOR_NOTES: legacy pricing module (ICA)
 
+Team: Moses Banda, paired with Claude (AI assistant) because the team had an odd number of members.
+
 Branch: `refactor`. Public signature `calc(t, q, u, d, c=None, w=False)` unchanged. No test edited. 24/24 tests green after every step.
 
 ## Worksheet 1: Understanding
