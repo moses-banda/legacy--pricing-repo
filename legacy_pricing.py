@@ -5,26 +5,27 @@ Your job: refactor it without changing behavior, and measure the result with rad
 """
 
 
+def base_price(t, d):
+    """Per-ticket price for an event type on a given day (0=Mon..6=Sun)."""
+    if t == "concert":
+        if d == 5 or d == 6:
+            return 25.0
+        return 20.0
+    elif t == "lecture":
+        return 5.0
+    elif t == "sports":
+        if d == 5 or d == 6:
+            return 15.0
+        return 12.0
+    elif t == "workshop":
+        return 30.0
+    raise ValueError("bad type")
+
+
 def calc(t, q, u, d, c=None, w=False):
     # t = event type, q = quantity, u = user dict, d = day of week (0=Mon..6=Sun),
     # c = coupon code, w = waitlist
-    p = 0
-    if t == "concert":
-        if d == 5 or d == 6:
-            p = 25.0
-        else:
-            p = 20.0
-    elif t == "lecture":
-        p = 5.0
-    elif t == "sports":
-        if d == 5 or d == 6:
-            p = 15.0
-        else:
-            p = 12.0
-    elif t == "workshop":
-        p = 30.0
-    else:
-        raise ValueError("bad type")
+    p = base_price(t, d)
     if q <= 0:
         raise ValueError("bad qty")
     if q > 10:
